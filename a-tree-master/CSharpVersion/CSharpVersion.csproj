@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework> 
+    <RootNamespace>ATree</RootNamespace> <!-- Changed from CSharpVersion -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Removed Antlr4.Runtime.Standard and Antlr4BuildTasks -->
+    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.0" />
+  </ItemGroup>
+
+  <!-- Removed Antlr4 ItemGroup -->
+
+</Project>

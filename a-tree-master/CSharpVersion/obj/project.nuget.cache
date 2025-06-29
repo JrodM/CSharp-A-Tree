@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "iTFqG8WsGFQ=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\jared\\Downloads\\a-tree-master\\a-tree-master\\CSharpVersion\\CSharpVersion.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\jared\\.nuget\\packages\\microsoft.extensions.objectpool\\8.0.0\\microsoft.extensions.objectpool.8.0.0.nupkg.sha512",
+    "C:\\Users\\jared\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.17\\microsoft.netcore.app.ref.8.0.17.nupkg.sha512",
+    "C:\\Users\\jared\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.17\\microsoft.windowsdesktop.app.ref.8.0.17.nupkg.sha512",
+    "C:\\Users\\jared\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.17\\microsoft.aspnetcore.app.ref.8.0.17.nupkg.sha512"
+  ],
+  "logs": []
+}

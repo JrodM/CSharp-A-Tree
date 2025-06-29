@@ -1,0 +1,290 @@
+use crate::{
+    error::ParserError,
+    lexer::Token,
+    ast,
+    predicates,
+    events::AttributeTable,
+    strings::StringTable,
+};
+use itertools::Itertools;
+use rust_decimal::Decimal;
+use lalrpop_util::ParseError;
+
+grammar<'input>(attributes: &AttributeTable, strings: &mut StringTable);
+
+pub Tree: ast::Node = {
+    Expression
+}
+
+Expression: ast::Node = {
+    #[precedence(level="2")] #[assoc(side="left")]
+    <left:Expression> "and" <right:Expression> => {
+        ast::Node::And(Box::new(left), Box::new(right))
+    },
+    #[precedence(level="2")] #[assoc(side="left")]
+    <left:Expression> "or" <right:Expression> => {
+        ast::Node::Or(Box::new(left), Box::new(right))
+    },
+    #[precedence(level="1")]
+    NumericExpression,
+    #[precedence(level="1")]
+    EqualityExpression,
+    #[precedence(level="1")]
+    NullExpression,
+    #[precedence(level="1")]
+    ListExpression,
+    #[precedence(level="1")]
+    SetExpression,
+    #[precedence(level="1")]
+    "not" <expression:Expression> => ast::Node::Not(Box::new(expression)),
+    #[precedence(level="0")]
+    "(" <expression:ExpressionReset> ")" => expression,
+    #[precedence(level="0")]
+    <variable:"identifier"> =>?
+        predicates::Predicate::new(
+            attributes,
+            variable,
+            predicates::PredicateKind::Variable
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    ,
+}
+
+ExpressionReset: ast::Node = {
+    <Expression>,
+}
+
+NumericExpression: ast::Node = {
+    <left:"identifier"> "<" <right:NumericValue> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Comparison(predicates::ComparisonOperator::LessThan, right)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:"identifier"> "<=" <right:NumericValue> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Comparison(predicates::ComparisonOperator::LessThanEqual, right)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:"identifier"> ">" <right:NumericValue> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Comparison(predicates::ComparisonOperator::GreaterThan, right)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:"identifier"> ">=" <right:NumericValue> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Comparison(predicates::ComparisonOperator::GreaterThanEqual, right)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:NumericValue> "<" <right:"identifier"> =>? {
+        predicates::Predicate::new(
+            attributes,
+            right,
+            predicates::PredicateKind::Comparison(predicates::ComparisonOperator::GreaterThan, left)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:NumericValue> "<=" <right:"identifier"> =>? {
+        predicates::Predicate::new(
+            attributes,
+            right,
+            predicates::PredicateKind::Comparison(predicates::ComparisonOperator::GreaterThanEqual, left)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:NumericValue> ">" <right:"identifier"> =>? {
+        predicates::Predicate::new(
+            attributes,
+            right,
+            predicates::PredicateKind::Comparison(predicates::ComparisonOperator::LessThan, left)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:NumericValue> ">=" <right:"identifier"> =>? {
+        predicates::Predicate::new(
+            attributes,
+            right,
+            predicates::PredicateKind::Comparison(predicates::ComparisonOperator::LessThanEqual, left)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+}
+
+NumericValue: predicates::ComparisonValue = {
+    <value:"integer"> => predicates::ComparisonValue::Integer(value),
+    <value:"float"> => predicates::ComparisonValue::Float(value),
+}
+
+EqualityExpression: ast::Node = {
+    <left:"identifier"> "=" <right:PrimitiveLiteral> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Equality(predicates::EqualityOperator::Equal, right)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:"identifier"> "<>" <right:PrimitiveLiteral> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Equality(predicates::EqualityOperator::NotEqual, right)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:PrimitiveLiteral> "=" <right:"identifier"> =>? {
+        predicates::Predicate::new(
+            attributes,
+            right,
+            predicates::PredicateKind::Equality(predicates::EqualityOperator::Equal, left)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:PrimitiveLiteral> "<>" <right:"identifier"> =>? {
+        predicates::Predicate::new(
+            attributes,
+            right,
+            predicates::PredicateKind::Equality(predicates::EqualityOperator::NotEqual, left)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    }
+}
+
+PrimitiveLiteral: predicates::PrimitiveLiteral = {
+    <value:"integer"> => predicates::PrimitiveLiteral::Integer(value),
+    <value:"float"> => predicates::PrimitiveLiteral::Float(value),
+    <value:"string"> => predicates::PrimitiveLiteral::String(strings.get_or_update(value)),
+}
+
+NullExpression: ast::Node = {
+    <left:"identifier"> "is_null" =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Null(predicates::NullOperator::IsNull)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:"identifier"> "is_not_null" =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Null(predicates::NullOperator::IsNotNull)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:"identifier"> "is_empty" =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Null(predicates::NullOperator::IsEmpty)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:"identifier"> "is_not_empty" =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Null(predicates::NullOperator::IsNotEmpty)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    }
+}
+
+ListExpression: ast::Node = {
+    <left:"identifier"> "one_of" <list:ListLiteral> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::List(predicates::ListOperator::OneOf, list)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:"identifier"> "all_of" <list:ListLiteral> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::List(predicates::ListOperator::AllOf, list)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:"identifier"> "none_of" <list:ListLiteral> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::List(predicates::ListOperator::NoneOf, list)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    }
+}
+
+SetExpression: ast::Node = {
+    <left:"identifier"> "in" <list:ListLiteral> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Set(predicates::SetOperator::In, list)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+    <left:"identifier"> "not_in" <list:ListLiteral> =>? {
+        predicates::Predicate::new(
+            attributes,
+            left,
+            predicates::PredicateKind::Set(predicates::SetOperator::NotIn, list)
+        ).map(ast::Node::Value).map_err(|error| ParseError::User { error: ParserError::Event(error) })
+    },
+}
+
+ListLiteral: predicates::ListLiteral = {
+    <values:List<"integer">> => predicates::ListLiteral::IntegerList(values),
+    <values:List<"string">> => predicates::ListLiteral::StringList(
+        values.iter().map(|value| strings.get_or_update(value)).collect()
+    )
+
+}
+
+List<T>: Vec<T> = {
+    "[" <values:Comma<T>> "]" => {
+        values.into_iter().sorted().unique().collect()
+    },
+    "(" <values:Comma<T>> ")" => {
+        values.into_iter().sorted().unique().collect()
+    },
+}
+
+Comma<T>: Vec<T> = {
+    <value:T> => {
+        vec![value]
+    },
+    <mut values:(<T> ",")+> <entry:T> => {
+        values.push(entry);
+        values
+    }
+}
+
+extern {
+    type Location = usize;
+    type Error = ParserError;
+
+    enum Token<'input> {
+        "(" => Token::LeftParenthesis,
+        ")" => Token::RightParenthesis,
+        "[" => Token::LeftSquareBracket,
+        "]" => Token::RightSquareBracket,
+        "," => Token::Comma,
+        "<" => Token::LessThan,
+        "<=" => Token::LessThanEqual,
+        ">" => Token::GreaterThan,
+        ">=" => Token::GreaterThanEqual,
+        "not" => Token::Not,
+        "=" => Token::Equal,
+        "<>" => Token::NotEqual,
+        "in" => Token::In,
+        "not_in" => Token::NotIn,
+        "one_of" => Token::OneOf,
+        "none_of" => Token::NoneOf,
+        "all_of" => Token::AllOf,
+        "is_null" => Token::IsNull,
+        "is_not_null" => Token::IsNotNull,
+        "is_empty" => Token::IsEmpty,
+        "is_not_empty" => Token::IsNotEmpty,
+        "and" => Token::And,
+        "or" => Token::Or,
+        "integer" => Token::IntegerLiteral(<i64>),
+        "string" => Token::StringLiteral(<&'input str>),
+        "float" => Token::FloatLiteral(<Decimal>),
+        "boolean" => Token::BooleanLiteral(<bool>),
+        "identifier" => Token::Identifier(<&'input str>)
+    }
+}

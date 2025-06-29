@@ -1,0 +1,51 @@
+[package]
+name = "a-tree"
+homepage = "https://github.com/AntoineGagne/a-tree"
+repository = "https://github.com/AntoineGagne/a-tree"
+description = "A dynamic data structure for efficiently indexing arbitrary boolean expressions"
+documentation = "https://docs.rs/crate/a-tree/latest"
+authors = ["Antoine Gagné <gagnantoine@gmail.com>"]
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+version = "0.5.0"
+edition = "2021"
+build = "build.rs"
+include = [
+    "/benches/**",
+    "/src/**",
+    "/examples/**",
+    "/build.rs",
+    "/Cargo.toml",
+    "/LICENSE-APACHE",
+    "/LICENSE-MIT",
+    "/README.md"
+]
+categories = ["data-structures"]
+keywords = [
+    "boolean-expression",
+    "data-structure",
+    "data-structures",
+    "event-filtering",
+    "tree"
+]
+
+[[bench]]
+name = "benchmarks"
+harness = false
+
+[build-dependencies]
+lalrpop = "0.22.0"
+
+[dependencies]
+itertools = "0.14"
+lalrpop-util = { version = "0.22.0", features = ["lexer", "unicode"] }
+logos = "0.15"
+rust_decimal = "1.36"
+slab = "0.4"
+thiserror = "2.0"
+
+[dev-dependencies]
+criterion = { version = "0.6", features = ["html_reports"] }
+serde = "1.0"
+serde_json = "1.0"
+proptest = "1.6"
