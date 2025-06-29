@@ -1,8 +1,0 @@
-C:/Users/jared/Downloads/a-tree-master/a-tree-master/CSharpVersion/obj/Debug/net8.0/BooleanExpr.interp
-C:/Users/jared/Downloads/a-tree-master/a-tree-master/CSharpVersion/obj/Debug/net8.0/BooleanExpr.tokens
-C:/Users/jared/Downloads/a-tree-master/a-tree-master/CSharpVersion/obj/Debug/net8.0/BooleanExprBaseVisitor.cs
-C:/Users/jared/Downloads/a-tree-master/a-tree-master/CSharpVersion/obj/Debug/net8.0/BooleanExprLexer.cs
-C:/Users/jared/Downloads/a-tree-master/a-tree-master/CSharpVersion/obj/Debug/net8.0/BooleanExprLexer.interp
-C:/Users/jared/Downloads/a-tree-master/a-tree-master/CSharpVersion/obj/Debug/net8.0/BooleanExprLexer.tokens
-C:/Users/jared/Downloads/a-tree-master/a-tree-master/CSharpVersion/obj/Debug/net8.0/BooleanExprParser.cs
-C:/Users/jared/Downloads/a-tree-master/a-tree-master/CSharpVersion/obj/Debug/net8.0/BooleanExprVisitor.cs
