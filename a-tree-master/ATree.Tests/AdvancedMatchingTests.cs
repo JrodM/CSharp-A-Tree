@@ -21,7 +21,9 @@ namespace ATree.Tests
             {
                 _attributeDefinitions.Add(AttributeDefinition.Integer($"Attr{i}"));
             }
-            
+            _attributeDefinitions.Add(AttributeDefinition.String("StringAttr1"));
+            _attributeDefinitions.Add(AttributeDefinition.String("StringAttr2"));
+
             _attributeTable = new AttributeTable(_attributeDefinitions);
             _atree = new ATree<string>(_attributeDefinitions);
 
@@ -56,18 +58,42 @@ namespace ATree.Tests
                 )
             );
             _atree.AddRule("Subscriber4", rule4);
-            
+
             // Subscriber 5: Single predicate rule
             var rule5 = new ValueNode(Predicate.Eq(_attributeTable, "Attr8", 90));
             _atree.AddRule("Subscriber5", rule5);
+
+            // Subscriber 6: Complex rule with AND and IN (OR-like) conditions
+            var rule6 = new AndNode(
+                new ValueNode(Predicate.In(_attributeTable, "Attr0", new long[] { 100, 110, 120 })),
+                new ValueNode(Predicate.In(_attributeTable, "Attr1", new long[] { 200, 210, 220 }))
+            );
+            _atree.AddRule("Subscriber6", rule6);
+
+            // Subscriber 7: String-based IN condition
+            var rule7 = new ValueNode(Predicate.In(_attributeTable, "StringAttr1", new[] { "alpha", "beta", "gamma" }, _atree.Strings));
+            _atree.AddRule("Subscriber7", rule7);
+
+            _atree.DumpTreeToDotFile("MatchingTests.dot");
         }
 
-        private Event BuildEvent(params (string, int)[] attributes)
+        private Event BuildEvent(params (string, object)[] attributes)
         {
             var eventBuilder = _atree.MakeEvent();
             foreach (var (name, value) in attributes)
             {
-                eventBuilder.WithInteger(name, value);
+                switch (value)
+                {
+                    case int intVal:
+                        eventBuilder.WithInteger(name, intVal);
+                        break;
+                    case long longVal:
+                        eventBuilder.WithInteger(name, longVal);
+                        break;
+                    case string stringVal:
+                        eventBuilder.WithString(name, stringVal);
+                        break;
+                }
             }
             return eventBuilder.Build();
         }
@@ -183,6 +209,46 @@ namespace ATree.Tests
             Assert.AreEqual(2, results.Count, "Expected two disjoint matches.");
             Assert.IsTrue(results.Contains("Subscriber3"), "Subscriber3 should have matched.");
             Assert.IsTrue(results.Contains("Subscriber5"), "Subscriber5 should have matched.");
+        }
+
+        [TestMethod]
+        public void Test_Scenario_MatchSubscriber6_AndOfInClauses()
+        {
+            // This event satisfies Subscriber6's rule: (Attr0 IN [100, 110, 120]) AND (Attr1 IN [200, 210, 220])
+            var anEvent = BuildEvent(("Attr0", 110), ("Attr1", 220));
+            var results = _atree.MatchEvent(anEvent);
+
+            Assert.AreEqual(1, results.Count, "Expected exactly one match for Subscriber6.");
+            Assert.IsTrue(results.Contains("Subscriber6"), "Subscriber6 should have matched.");
+        }
+
+        [TestMethod]
+        public void Test_Scenario_NoMatchSubscriber6_PartialAnd()
+        {
+            // This event satisfies only the first part of Subscriber6's rule
+            var anEvent = BuildEvent(("Attr0", 100), ("Attr1", 999));
+            var results = _atree.MatchEvent(anEvent);
+
+            Assert.AreEqual(0, results.Count, "Expected no matches for a partial AND of INs condition.");
+        }
+
+        [TestMethod]
+        public void Test_Scenario_MatchSubscriber7_StringInClause()
+        {
+            var anEvent = BuildEvent(("StringAttr1", "beta"));
+            var results = _atree.MatchEvent(anEvent);
+
+            Assert.AreEqual(1, results.Count, "Expected exactly one match for Subscriber7.");
+            Assert.IsTrue(results.Contains("Subscriber7"), "Subscriber7 should have matched.");
+        }
+
+        [TestMethod]
+        public void Test_Scenario_NoMatchSubscriber7_StringInClause()
+        {
+            var anEvent = BuildEvent(("StringAttr1", "delta"));
+            var results = _atree.MatchEvent(anEvent);
+
+            Assert.AreEqual(0, results.Count, "Expected no matches for Subscriber7 with a non-matching string.");
         }
     }
 }

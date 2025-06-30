@@ -488,7 +488,7 @@ namespace ATree
                 if (result == false)
                 {
                     results.SetResult(nodeId, false);
-                    return false; // Short-circuit
+                    return false; 
                 }
                 if (result == null)
                 {
@@ -509,7 +509,7 @@ namespace ATree
                 if (result == true)
                 {
                     results.SetResult(nodeId, true);
-                    return true; // Short-circuit
+                    return true;
                 }
                 if (result == null)
                 {
@@ -618,12 +618,13 @@ namespace ATree
         public string ToGraphviz()
         {
             var builder = new StringBuilder();
-            builder.AppendLine("digograph {");
+            builder.AppendLine("digraph {");
             builder.AppendLine("    rankdir = TB;");
             builder.AppendLine("    node [shape = record];");
 
+            var nodeDefinitions = new List<string>();
             var relations = new List<string>();
-            var levels = new Dictionary<int, List<(int, string)>>();
+            var levels = new Dictionary<int, List<int>>();
 
             for (int id = 0; id < _nodes.Count; id++)
             {
@@ -632,7 +633,7 @@ namespace ATree
 
                 string nodeString = "";
                 string subscriptions = string.Join(", ", entry.SubscriptionIds.Select(s => EscapeForDot(s?.ToString() ?? "")));
-                
+
                 switch (entry.Node)
                 {
                     case ATreeNode.L lNode:
@@ -655,25 +656,25 @@ namespace ATree
                                     {
                                         val = eq.ValueToCompare?.ToString() ?? "";
                                     }
-                                    predicateDetails = $"{attrDef.Name} ({attrDef.Kind}) {EqualityOperatorExtensions.Display(eq.Operator)} {val}";
+                                    predicateDetails = $"{attrDef.Name} {EqualityOperatorExtensions.Display(eq.Operator)} {val}";
                                     break;
                                 case PredicateKind.Comparison comp:
-                                    predicateDetails = $"{attrDef.Name} ({attrDef.Kind}) {ComparisonOperatorExtensions.Display(comp.Operator)} {comp.ValueToCompare}";
+                                    predicateDetails = $"{attrDef.Name} {ComparisonOperatorExtensions.Display(comp.Operator)} {comp.ValueToCompare}";
                                     break;
                                 case PredicateKind.Set set:
-                                    predicateDetails = $"{attrDef.Name} ({attrDef.Kind}) {SetOperatorExtensions.Display(set.Operator)} {set.Haystack}";
+                                    predicateDetails = $"{attrDef.Name} {SetOperatorExtensions.Display(set.Operator)} {set.Haystack}";
                                     break;
                                 case PredicateKind.List list:
-                                    predicateDetails = $"{attrDef.Name} ({attrDef.Kind}) {ListOperatorExtensions.Display(list.Operator)} {list.ListToCompare}";
+                                    predicateDetails = $"{attrDef.Name} {ListOperatorExtensions.Display(list.Operator)} {list.ListToCompare}";
                                     break;
                                 case PredicateKind.Null nullPred:
-                                    predicateDetails = $"{attrDef.Name} ({attrDef.Kind}) {NullOperatorExtensions.Display(nullPred.Operator)}";
+                                    predicateDetails = $"{attrDef.Name} {NullOperatorExtensions.Display(nullPred.Operator)}";
                                     break;
                                 case PredicateKind.Variable:
-                                    predicateDetails = $"{attrDef.Name} ({attrDef.Kind}) is true";
+                                    predicateDetails = $"{attrDef.Name} is true";
                                     break;
                                 case PredicateKind.NegatedVariable:
-                                    predicateDetails = $"{attrDef.Name} ({attrDef.Kind}) is false";
+                                    predicateDetails = $"{attrDef.Name} is false";
                                     break;
                                 default:
                                     predicateDetails = p.ToString();
@@ -681,63 +682,59 @@ namespace ATree
                             }
                             predicateString = EscapeForDot(predicateDetails);
                         }
-                        nodeString = $@"node_{id} [label = ""{{{id} | level: {entry.Node.Level} | {predicateString} | subscriptions: {subscriptions} ({entry.UseCount}) | l-node}}"", style = ""rounded""];";
-                        foreach (var parentId in lNode.Item.Parents)
-                        {
-                            relations.Add($"node_{id} -> node_{parentId};");
-                        }
+                        nodeString = $@"node_{id} [label = ""{{L-Node {id} | {predicateString} |<f0> level: {entry.Node.Level} | cost: {entry.Cost} | subs: {subscriptions} ({entry.UseCount})}}"", style = ""rounded,filled"", fillcolor=""lightblue""]";
                         break;
                     case ATreeNode.I iNode:
-                        nodeString = $@"node_{id} [label = ""{{{id} | level: {entry.Node.Level} | {iNode.Item.Operator} | subscriptions: {subscriptions} ({entry.UseCount}) | i-node}}""];";
-                        foreach (var parentId in iNode.Item.Parents)
-                        {
-                            relations.Add($"node_{id} -> node_{parentId};");
-                        }
+                        string iChildren = string.Join(", ", iNode.Item.Children);
+                        nodeString = $@"node_{id} [label = <<TABLE BORDER=""0"" CELLBORDER=""1"" CELLSPACING=""0"" CELLPADDING=""4""><TR><TD COLSPAN=""2"">I-Node {id}</TD></TR><TR><TD>Operator</TD><TD><B>{iNode.Item.Operator}</B></TD></TR><TR><TD>Level</TD><TD>{entry.Node.Level}</TD></TR><TR><TD>Cost</TD><TD>{entry.Cost}</TD></TR><TR><TD>Children</TD><TD>{iChildren}</TD></TR><TR><TD>Subs</TD><TD>{subscriptions} ({entry.UseCount})</TD></TR></TABLE>>, shape=""plaintext"", style=""filled"", fillcolor=""lightgrey""]";
                         foreach (var childId in iNode.Item.Children)
                         {
-                            relations.Add($"node_{id} -> node_{childId};");
+                            relations.Add($"    node_{id} -> node_{childId};");
                         }
                         break;
                     case ATreeNode.R rNode:
-                        nodeString = $@"node_{id} [label = ""{{{id} | level: {entry.Node.Level} | {rNode.Item.Operator} | subscriptions: {subscriptions} ({entry.UseCount}) | r-node}}""];";
+                        string rChildren = string.Join(", ", rNode.Item.Children);
+                        nodeString = $@"node_{id} [label = <<TABLE BORDER=""0"" CELLBORDER=""1"" CELLSPACING=""0"" CELLPADDING=""4""><TR><TD COLSPAN=""2"">R-Node {id} (root)</TD></TR><TR><TD>Operator</TD><TD><B>{rNode.Item.Operator}</B></TD></TR><TR><TD>Level</TD><TD>{entry.Node.Level}</TD></TR><TR><TD>Cost</TD><TD>{entry.Cost}</TD></TR><TR><TD>Children</TD><TD>{rChildren}</TD></TR><TR><TD>Subs</TD><TD>{subscriptions} ({entry.UseCount})</TD></TR></TABLE>>, shape=""plaintext"", style=""filled"", fillcolor=""lightgrey""]";
                         foreach (var childId in rNode.Item.Children)
                         {
-                            relations.Add($"node_{id} -> node_{childId};");
+                            relations.Add($"    node_{id} -> node_{childId};");
                         }
                         break;
                 }
-                if (entry.Node.Level > 0)
+
+                if (!string.IsNullOrEmpty(nodeString))
                 {
-                    if (!levels.ContainsKey(entry.Node.Level))
+                    nodeDefinitions.Add("    " + nodeString);
+                    if (entry.Node.Level > 0)
                     {
-                        levels[entry.Node.Level] = new List<(int, string)>();
+                        if (!levels.ContainsKey(entry.Node.Level))
+                        {
+                            levels[entry.Node.Level] = new List<int>();
+                        }
+                        levels[entry.Node.Level].Add(id);
                     }
-                    levels[entry.Node.Level].Add((id, nodeString));
                 }
             }
 
             builder.AppendLine();
-            builder.AppendLine("// nodes");
+            builder.AppendLine("    // nodes");
+            builder.AppendLine(string.Join("\n", nodeDefinitions));
+
+            builder.AppendLine();
+            builder.AppendLine("    // levels");
             foreach (var level in levels.OrderByDescending(kv => kv.Key))
             {
-                foreach (var (_, node) in level.Value)
-                {
-                    builder.AppendLine(node);
-                }
-                builder.Append("{rank = same; ");
-                foreach (var (id, _) in level.Value)
+                builder.Append("    {rank = same; ");
+                foreach (var id in level.Value)
                 {
                     builder.Append($"node_{id}; ");
                 }
-                builder.AppendLine("};");
+                builder.AppendLine("}");
             }
 
             builder.AppendLine();
-            builder.AppendLine("// edges");
-            foreach (var relation in relations)
-            {
-                builder.AppendLine(relation);
-            }
+            builder.AppendLine("    // edges");
+            builder.AppendLine(string.Join("\n", relations));
 
             builder.AppendLine("}");
             return builder.ToString();
