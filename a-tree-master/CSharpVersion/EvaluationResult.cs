@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace ATree // Changed from ATree.CSharpVersion
+namespace ATree 
 {
-    // Corresponds to EvaluationResult in Rust
+    
     public class EvaluationResult<T>
     {
         private readonly List<bool?> _results; // Using List<bool?> to mimic Slab behavior with Option<bool>
@@ -14,12 +14,12 @@ namespace ATree // Changed from ATree.CSharpVersion
         {
             _results = new List<bool?>(capacity);
             _isEvaluated = new List<bool>(capacity);
-            _andCounts = new List<int>(capacity); // Initialize AND counts
+            _andCounts = new List<int>(capacity);
             for (int i = 0; i < capacity; i++)
             {
                 _results.Add(null);
                 _isEvaluated.Add(false);
-                _andCounts.Add(0); // Default AND count is 0
+                _andCounts.Add(0); 
             }
         }
 
@@ -29,7 +29,7 @@ namespace ATree // Changed from ATree.CSharpVersion
             return _isEvaluated[nodeId];
         }
 
-        public void SetEvaluated(int nodeId) // Method to explicitly mark as evaluated
+        public void SetEvaluated(int nodeId) 
         {
             if (nodeId >= 0 && nodeId < _isEvaluated.Count)
             {
@@ -39,14 +39,14 @@ namespace ATree // Changed from ATree.CSharpVersion
 
         public bool? GetResult(int nodeId)
         {
-            if (nodeId < 0 || nodeId >= _results.Count) return null; // Or throw
+            if (nodeId < 0 || nodeId >= _results.Count) return null;
             return _results[nodeId];
         }
 
         public void SetResult(int nodeId, bool? result)
         {
-            if (nodeId < 0) return; // Or throw
-            EnsureCapacity(nodeId + 1); // Ensure capacity before setting
+            if (nodeId < 0) return; 
+            EnsureCapacity(nodeId + 1);
             _results[nodeId] = result;
             _isEvaluated[nodeId] = true;
         }
@@ -63,7 +63,7 @@ namespace ATree // Changed from ATree.CSharpVersion
 
         public int IncrementAndCount(int nodeId)
         {
-            if (nodeId < 0 || nodeId >= _andCounts.Count) return 0; // Or throw
+            if (nodeId < 0 || nodeId >= _andCounts.Count) return 0; 
             _andCounts[nodeId]++;
             return _andCounts[nodeId];
         }
