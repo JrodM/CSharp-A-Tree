@@ -171,8 +171,6 @@ namespace ATree
         
         public static Predicate Eq(AttributeTable attributes, string name, bool value)
         {
-            // In Rust, boolean equality is typically handled by Variable or NegatedVariable
-            // If direct boolean equality predicate is needed:
             var kind = new PredicateKind.Equality(EqualityOperator.Equal, new PrimitiveLiteral.Boolean(value));
             return new Predicate(attributes, name, kind);
         }
@@ -554,7 +552,7 @@ namespace ATree
         }
     }
 
-    public enum ListOperator { NoneOf, OneOf, AllOf, NotAllOf } // Added NotAllOf
+    public enum ListOperator { NoneOf, OneOf, AllOf, NotAllOf }
     public static class ListOperatorExtensions
     {
         public static bool Evaluate(this ListOperator op, ListLiteral listToCompare, AttributeValue eventValue)
@@ -578,12 +576,12 @@ namespace ATree
                 case ListOperator.OneOf:
                     return predicateList.Any(pItem => eventList.Contains(pItem));
                 case ListOperator.AllOf:
-                    if (!predicateList.Any()) return true; // All of an empty set is vacuously true
+                    if (!predicateList.Any()) return true; 
                     return predicateList.All(pItem => eventList.Contains(pItem));
                 case ListOperator.NoneOf:
                     return !predicateList.Any(pItem => eventList.Contains(pItem));
-                case ListOperator.NotAllOf: // Added case for NotAllOf
-                    if (!predicateList.Any()) return false; // Not all of an empty set is false (as AllOf is true)
+                case ListOperator.NotAllOf: 
+                    if (!predicateList.Any()) return false; 
                     return !predicateList.All(pItem => eventList.Contains(pItem));
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op));
@@ -593,8 +591,8 @@ namespace ATree
         {
             ListOperator.OneOf => ListOperator.NoneOf,
             ListOperator.NoneOf => ListOperator.OneOf,
-            ListOperator.AllOf => ListOperator.NotAllOf, // Changed to NotAllOf
-            ListOperator.NotAllOf => ListOperator.AllOf, // Added negation for NotAllOf
+            ListOperator.AllOf => ListOperator.NotAllOf, 
+            ListOperator.NotAllOf => ListOperator.AllOf, 
             _ => throw new ArgumentOutOfRangeException(nameof(op)),
         };
         public static string Display(this ListOperator op) => op switch
@@ -602,7 +600,7 @@ namespace ATree
             ListOperator.OneOf => "one of",
             ListOperator.NoneOf => "none of",
             ListOperator.AllOf => "all of",
-            ListOperator.NotAllOf => "not all of", // Added display for NotAllOf
+            ListOperator.NotAllOf => "not all of", 
             _ => throw new ArgumentOutOfRangeException(nameof(op)),
         };
     }

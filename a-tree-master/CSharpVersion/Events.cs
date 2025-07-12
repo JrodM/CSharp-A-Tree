@@ -208,7 +208,7 @@ namespace ATree
         private void AddValue(string name, AttributeKind expectedKind, Func<AttributeValue> valueFactory)
         {
             var definition = _attributes.GetDefinitionByName(name);
-            if (definition == null) // Added null check for definition
+            if (definition == null) 
             {
                 throw new EventException($"Attribute '{name}' not defined.");
             }

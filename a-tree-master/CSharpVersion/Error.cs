@@ -13,7 +13,7 @@ namespace ATree
         public ParseException(string message) : base(message) { }
     }
 
-    public class EventException : ATreeException // Added this class definition
+    public class EventException : ATreeException
     {
         public EventException(string message) : base(message) { }
         public EventException(string message, Exception innerException) : base(message, innerException) { }
